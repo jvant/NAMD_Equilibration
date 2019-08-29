@@ -1,0 +1,129 @@
+#!tcl
+
+##########################################################
+#             For the creation of psf files with varying pH
+#                   written by John Vant
+#                        ASU Biodesign
+###########################################################
+#                        Notes
+# Make sure you are in the directory with mypdb value
+# Usage:
+#  in bash $ vmd -dispdev text -e build_system.pgn -args <filename>
+#  in tkconsole $ source build_system.pgn 
+
+#############################################################
+# Set mypdb as the file you want to create a psf for
+
+set mypdb [lindex $argv 0]
+set scripts_path [lindex $argv 1]
+set cmstr [lindex $argv 2]
+
+#############################################################
+#Module load
+
+package require psfgen
+
+resetpsf
+
+# Autopsf topology format
+topology $scripts_path/toppar/top_all36_prot.rtf
+topology $scripts_path/toppar/top_all36_na.rtf
+topology $scripts_path/toppar/top_all36_carb.rtf
+topology $scripts_path/toppar/top_all36_cgenff.rtf
+topology $scripts_path/toppar/toppar_all36_carb_glycopeptide.str
+topology $scripts_path/toppar/toppar_water_ions_namd.str
+topology $scripts_path/toppar/toppar_all36_prot_na_combined.str
+
+
+##############################################################
+# Load pdb
+mol new $mypdb
+
+pdbalias residue HIS HSD
+pdbalias residue MSE MET
+pdbalias atom ILE CD1 CD
+pdbalias residue HOH TIP3
+
+##############################################################
+# Get chains and write corresponding pdbs
+set selchains [atomselect top all]
+set chains [lsort -unique [$selchains get chain]]
+
+foreach i $chains {
+    set selchain [atomselect top "chain $i and not water"]
+    $selchain writepdb chain$i.pdb
+}
+
+
+##############################################################
+# Build segments ie add H to pdb
+foreach i $chains {
+segment $i {pdb chain$i.pdb}
+}
+
+foreach i $chains {
+    coordpdb chain$i.pdb $i
+}
+
+#### Patching disulfide bonds if there is a patch_text dir
+#  Slurp up the patch text data file
+echo "Start patching dude!"
+if {[file isdirectory ../../patch_text]} {
+    echo "patching in progress..."
+    set patch_file [glob ../../patch_text/[string range $mypdb 0 3]*]
+    set infile [open "$patch_file" r]
+    set file_data [read $infile]
+    close $infile
+
+    set data [split $file_data "\n"]
+    set lineCount [llength $data]
+
+    for {set i 1} {$i < $lineCount} {incr i} {
+	set patch_text [lindex $data $i]
+	if {$patch_text eq ""} {
+	    puts "Line was empty!"
+	} else { 
+	    echo "Patched the following selection: $patch_text"
+	    patch DISU [lindex $patch_text 0] [lindex $patch_text 1]
+	}
+    }
+}
+
+guesscoord
+writepdb Tmp.pdb
+writepsf Tmp.psf
+
+
+##############################################################
+#Solvate
+package require solvate
+solvate Tmp.psf Tmp.pdb -t 30 -o Tmp_solv
+
+
+##############################################################
+#Ionize
+
+package require autoionize
+autoionize -psf Tmp_solv.psf -pdb Tmp_solv.pdb -neutralize -o ./$cmstr-solv_ion
+resetpsf
+
+##############################################################
+#Calculate PBC size and write file w/ values
+set sel [atomselect top water]
+set var_minmax [measure minmax $sel]
+set var_cen [measure center $sel]
+
+set var_size [vecsub [lindex $var_minmax 1] [lindex $var_minmax 0]]
+
+set outfile [open "PBC_Values.str" w]
+puts $outfile $var_size
+puts $outfile $var_cen
+close $outfile
+
+##############################################################
+# Delete temporary files
+set del_files [glob chain*.pdb]
+file delete Tmp_solv.psf Tmp_solv.pdb Tmp.pdb Tmp.psf Tmp_solv.log 
+file delete $del_files
+
+exit

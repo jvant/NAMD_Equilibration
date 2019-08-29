@@ -1,0 +1,17 @@
+#############################################################
+## JOB DESCRIPTION                                         ##
+#############################################################
+
+# Equilibrate for 100 ps
+
+#############################################################
+## ADJUSTABLE PARAMETERS                                   ##
+#############################################################
+set myfile         FILENAME
+
+set temp           303.15;
+set stepnum        STEPNUM
+set outputname     step.$stepnum\_equilibration;
+set TS		   50000000
+
+source ./run.inp

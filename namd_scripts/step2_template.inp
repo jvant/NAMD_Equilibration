@@ -1,0 +1,20 @@
+#############################################################
+## JOB DESCRIPTION                                         ##
+#############################################################
+
+# Equilibrate for 100 ps
+
+#############################################################
+## ADJUSTABLE PARAMETERS                                   ##
+#############################################################
+
+set myfile MYSYS_NAME
+set stepnum STEP
+set scripts_path SCRIPTS_PATH
+
+set temp           303.15;
+
+set outputname     step$stepnum;
+set TS		   10000000
+
+source ./run.inp
