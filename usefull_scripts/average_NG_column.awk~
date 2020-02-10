@@ -1,0 +1,4 @@
+#! /usr/bin/awk -f 
+
+
+BEGIN '{ sum += $20; n++ } END { print sum/n }'

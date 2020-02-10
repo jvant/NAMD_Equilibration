@@ -15,7 +15,7 @@
 # Set mypdb as the file you want to create a psf for
 
 set mypdb [lindex $argv 0]
-set scripts_path [lindex $argv 1]
+set toppar_path [lindex $argv 1]
 set cmstr [lindex $argv 2]
 
 #############################################################
@@ -26,13 +26,13 @@ package require psfgen
 resetpsf
 
 # Autopsf topology format
-topology $scripts_path/toppar/top_all36_prot.rtf
-topology $scripts_path/toppar/top_all36_na.rtf
-topology $scripts_path/toppar/top_all36_carb.rtf
-topology $scripts_path/toppar/top_all36_cgenff.rtf
-topology $scripts_path/toppar/toppar_all36_carb_glycopeptide.str
-topology $scripts_path/toppar/toppar_water_ions_namd.str
-topology $scripts_path/toppar/toppar_all36_prot_na_combined.str
+topology $toppar_path/toppar/top_all36_prot.rtf
+topology $toppar_path/toppar/top_all36_na.rtf
+topology $toppar_path/toppar/top_all36_carb.rtf
+topology $toppar_path/toppar/top_all36_cgenff.rtf
+topology $toppar_path/toppar/toppar_all36_carb_glycopeptide.str
+topology $toppar_path/toppar/toppar_water_ions_namd.str
+topology $toppar_path/toppar/toppar_all36_prot_na_combined.str
 
 
 ##############################################################
@@ -123,7 +123,7 @@ close $outfile
 ##############################################################
 # Delete temporary files
 set del_files [glob chain*.pdb]
-file delete Tmp_solv.psf Tmp_solv.pdb Tmp.pdb Tmp.psf Tmp_solv.log 
-file delete $del_files
+rm Tmp_solv.psf Tmp_solv.pdb Tmp.pdb Tmp.psf Tmp_solv.log 
+rm $del_files
 
 exit

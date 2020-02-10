@@ -18,18 +18,19 @@
 
 bin_dir=$(pwd)
 programs_path=$bin_dir/..
-mkdir ../../systems/
+# mkdir ../../systems/
 # Systems that did not finish building 1h8e/ 4z1m/  5hkk/  6foc/  6n2y/
-for i in $(ls ../../F1_only_pdbs/)
+for sys in 6foc
 do
-    cmstr=${i:0:4}
-    mkdir ../../systems/$cmstr/
-    cp ../../F1_only_pdbs/$i ../../systems/$cmstr/
-    cd ../../systems/$cmstr/
-    vmd -dispdev text -eofexit < $programs_path/include/build_system.pgn -args $i $programs_path $cmstr
+    
+    mkdir ../../systems/$sys/
+    cp ../../ITASSER_models/$sys-merged.pdb ../../systems/$sys/
+    cd ../../systems/$sys/
+    vmd -dispdev text -eofexit < $programs_path/usefull_scripts/build_system.pgn -args $sys-merged.pdb $programs_path $sys
 
     echo " "
     echo "Built system dir and psf for $cmstr"
     echo " "
+    cd -
 done
 exit

@@ -1,0 +1,5 @@
+Debugger entered--Lisp error: (void-variable inputname=equi_NPT_1)
+  eval(inputname=equi_NPT_1 nil)
+  eval-last-sexp-1(nil)
+  eval-last-sexp(nil)
+  call-interactively(eval-last-sexp nil nil)

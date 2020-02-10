@@ -1,12 +1,13 @@
 #############################################################
 ## SIMULATION PARAMETERS                                   ##
 #############################################################
-structure          $myfile-solv_ion.psf
-coordinates        $myfile-solv_ion.pdb
+structure          $env(mypsf)
+coordinates        $env(mypdb)
 
+if { ($env(outputname) == "min") } {
 #### Read PBC data into configuration file
 #  Slurp up the data file
-set fp [open "PBC_Values.str" r]
+set fp [open "$env(inputdir)/PBC_Values.str" r]
 set file_data [read $fp]
 close $fp
 
@@ -19,17 +20,28 @@ set ycen [lindex $data 1 1]
 set zcen [lindex $data 1 2]
 ####
 
+temperature $env(temp)
 
-outputName         $outputname            
+cellBasisVector1     $a   0.0   0.0;   # vector to the next image
+cellBasisVector2    0.0    $b   0.0;
+cellBasisVector3    0.0   0.0    $c;
+cellOrigin          $xcen $ycen $zcen;   # the *center* of the cell
 
-# Continuing a job from last run if step other than step1
-if {$stepnum != 1} {
-   set inputname      step[expr $stepnum - 1] 
+} elseif { ($env(outputname) == "ann") } {
+   set inputname      min
+   binCoordinates     $inputname.coor
+   extendedSystem     $inputname.xsc
+   temperature 	      60
+
+} else {
+   set inputname      $env(inputname)
    binCoordinates     $inputname.coor
    binVelocities      $inputname.vel  ;# remove the "temperature" entry if you use this!
    extendedSystem     $inputname.xsc
 }
 
+
+outputName         $env(outputname)
 restartfreq        500;                # 500 steps = every 1ps
 dcdfreq           10000;
 dcdUnitCell        yes;                # the file will contain unit cell info in the style of
@@ -37,7 +49,7 @@ dcdUnitCell        yes;                # the file will contain unit cell info in
                                        # unit cell information in the style of charmm DCD files.
 xstFreq           1000;                # XSTFreq: control how often the extended systen configuration
                                        # will be appended to the XST file
-outputEnergies     500;                # 500 steps = every 0.5ps
+outputEnergies    1000;                # 500 steps = every 0.5ps
                                        # The number of timesteps between each energy output of NAMD
 outputTiming      1000;                # The number of timesteps between each timing output shows
                                        # time per step and time to completion
@@ -45,12 +57,15 @@ outputTiming      1000;                # The number of timesteps between each ti
 # Force-Field Parameters
 paraTypeCharmm     on;                 # We're using charmm type parameter file(s)
                                        # multiple definitions may be used but only one file per definition
+
+set scripts_path $env(scripts_path)
 parameters          $scripts_path/toppar/par_all36m_prot.prm
 parameters          $scripts_path/toppar/par_all36_na.prm
 parameters          $scripts_path/toppar/par_all36_carb.prm
 parameters          $scripts_path/toppar/par_all36_lipid.prm
 parameters          $scripts_path/toppar/par_all36_cgenff.prm
 parameters          $scripts_path/toppar/toppar_water_ions.str
+parameters          $scripts_path/toppar/G6P_wH.par
 parameters          $scripts_path/toppar/toppar_dum_noble_gases.str
 parameters          $scripts_path/toppar/toppar_all36_prot_d_aminoacids.str
 parameters          $scripts_path/toppar/toppar_all36_prot_fluoro_alkanes.str
@@ -112,13 +127,7 @@ fullElectFrequency  1;                 # PME every step
 
 # Constant Temperature Control ONLY DURING EQUILB
 reassignFreq        500;               # reassignFreq:  use this to reassign velocity every 500 steps
-reassignTemp        $temp;
-
-
-cellBasisVector1     $a   0.0   0.0;   # vector to the next image
-cellBasisVector2    0.0    $b   0.0;
-cellBasisVector3    0.0   0.0    $c;
-cellOrigin          $xcen $ycen $zcen;   # the *center* of the cell
+reassignTemp        $env(temp);
 
 wrapWater            on;               # wrap water to central cell
 wrapAll              on;               # wrap other molecules too
@@ -135,9 +144,17 @@ useGroupPressure       yes;            # use a hydrogen-group based pseudo-molec
 useFlexibleCell        yes;            # yes for anisotropic system like membrane 
 useConstantRatio       yes;            # keeps the ratio of the unit cell in the x-y plane constant A=B
 
+if { ($env(ensemble) == "NPT") } {
+   LangevinPiston	  yes
+   LangevinPistonTarget   1.01325
+   LangevinPistonPeriod   200
+   LangevinPistonDecay    100
+   LangevinPistonTemp     $env(temp)
+}
+
 langevin                on
 langevinDamping         1.0
-langevinTemp            $temp
+langevinTemp            $env(temp)
 langevinHydrogen        off
 
 
@@ -145,8 +162,14 @@ langevinHydrogen        off
 ## EXECUTION SCRIPT                                        ##
 #############################################################
 
-if {[info exists MS]} {
-   minimize $MS
+if {[info exists env(MS)]} {
+   minimize $env(MS)
 }
 
-run $TS
+if {$env(outputname) == "ann"} {
+   set ITEMP 60.0
+   set FTEMP $env(temp)
+   run [expr int(abs($FTEMP-$ITEMP)*100)] 
+   } else {
+     run $env(TS)
+}	
